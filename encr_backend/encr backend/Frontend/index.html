@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EduLock Secure</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: auto;
+            padding: 40px;
+            background: #f9fafb;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4f46e5;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        input, button {
+            padding: 10px;
+            margin: 8px 0;
+        }
+
+        button {
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        #preview img {
+            width: 100%;
+            margin-bottom: 15px;
+            border-radius: 6px;
+        }
+
+        video {
+            width: 100%;
+            border-radius: 8px;
+        }
+
+        .loading {
+            color: gray;
+        }
+    </style>
+</head>
+<body>
+
+<h1>EduLock Secure Demo</h1>
+
+<div class="card">
+    <h3>1️⃣ Upload & Encrypt</h3>
+    <input type="file" id="fileInput" />
+    <br>
+    <button onclick="encryptFile()">Encrypt & Upload</button>
+    <p id="uploadResult"></p>
+</div>
+
+<div class="card">
+    <h3>2️⃣ Decrypt & Preview</h3>
+    <input type="text" id="filenameInput" placeholder="Enter filename.edulock" style="width:60%;" />
+    <br>
+    <button onclick="decryptFile()">Decrypt & View</button>
+</div>
+
+<div id="preview" class="card"></div>
+
+<script>
+
+const BASE_URL = "https://dhanashree1910-edulock-secure.hf.space";
+const INTERNAL_SECRET = "node_to_crypto_secret";
+
+async function encryptFile() {
+    const file = document.getElementById("fileInput").files[0];
+    if (!file) return alert("Select a file first");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(`${BASE_URL}/encrypt`, {
+        method: "POST",
+        headers: {
+            "x-internal-key": INTERNAL_SECRET
+        },
+        body: formData
+    });
+
+    const data = await response.json();
+
+    if (data.stored_as) {
+        document.getElementById("uploadResult").innerText =
+            "Stored as: " + data.stored_as;
+    } else {
+        alert("Upload failed");
+    }
+}
+
+async function decryptFile() {
+    const filename = document.getElementById("filenameInput").value;
+    if (!filename) return alert("Enter filename");
+
+    const preview = document.getElementById("preview");
+    preview.innerHTML = "<p class='loading'>Decrypting...</p>";
+
+    const response = await fetch(`${BASE_URL}/decrypt/${filename}`, {
+        method: "POST",
+        headers: {
+            "x-internal-key": INTERNAL_SECRET
+        }
+    });
+
+    const data = await response.json();
+
+    if (data.type === "document") {
+        loadDocument(data.pages);
+    } 
+    else if (data.type === "video") {
+        loadVideo(data.playlist);
+    } 
+    else {
+        preview.innerHTML = "Invalid response.";
+    }
+}
+
+async function loadDocument(pagesEndpoint) {
+    const preview = document.getElementById("preview");
+    preview.innerHTML = "<p class='loading'>Loading document pages...</p>";
+
+    const response = await fetch(`${BASE_URL}${pagesEndpoint}`);
+    const data = await response.json();
+
+    preview.innerHTML = "<h3>📄 Document Preview</h3>";
+
+    data.pages.forEach(pagePath => {
+        const img = document.createElement("img");
+        img.src = `${BASE_URL}${pagePath}`;
+        preview.appendChild(img);
+    });
+}
+
+function loadVideo(playlistPath) {
+    const preview = document.getElementById("preview");
+    preview.innerHTML = "<h3>🎬 Secure Video Streaming</h3>";
+
+    const video = document.createElement("video");
+    video.controls = true;
+    preview.appendChild(video);
+
+    const fullUrl = `${BASE_URL}${playlistPath}`;
+
+    if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(fullUrl);
+        hls.attachMedia(video);
+    } else {
+        video.src = fullUrl;
+    }
+}
+
+</script>
+
+</body>
+</html>

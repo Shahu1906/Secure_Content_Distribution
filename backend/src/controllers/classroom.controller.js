@@ -116,9 +116,50 @@ export const getMyClasses = async (req, res) => {
     });
 
   } catch (err) {
-    console.error(err);
     res.status(500).json({
       error: "Failed to fetch classes",
+    });
+  }
+};
+
+/* ================================
+   GET CLASS STUDENTS
+================================ */
+export const getClassStudents = async (req, res) => {
+  const { classId } = req.params;
+  const user = req.user;
+
+  try {
+    // Check if user is member of class
+    const membership = await pool.query(
+      "SELECT * FROM class_members WHERE class_id = $1 AND user_id = $2",
+      [classId, user.id]
+    );
+
+    if (membership.rows.length === 0) {
+      return res.status(403).json({
+        error: "Not authorized to view class students",
+      });
+    }
+
+    const result = await pool.query(
+      `
+      SELECT u.id, u.name, u.email, m.joined_at, m.role, u.avatar_url
+      FROM users u
+      JOIN class_members m ON u.id = m.user_id
+      WHERE m.class_id = $1 AND m.role = 'student'
+      `,
+      [classId]
+    );
+
+    res.json({
+      success: true,
+      students: result.rows,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: "Failed to fetch students",
     });
   }
 };

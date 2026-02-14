@@ -3,6 +3,7 @@ import express from "express";
 import {
   uploadMaterial,
   getMaterials,
+  viewMaterial   // 👈 add this
 } from "../controllers/material.controller.js";
 
 import { verifyToken } from "../middleware/auth.middleware.js";
@@ -17,12 +18,22 @@ router.post(
   upload.single("file"),
   uploadMaterial
 );
+router.get("/test", (req, res) => {
+  res.send("Route working");
+});
 
 // Get class materials
 router.get(
   "/:classId",
   verifyToken,
   getMaterials
+);
+
+// 👇 ADD THIS ROUTE
+router.get(
+  "/view/:id",
+  verifyToken,
+  viewMaterial
 );
 
 export default router;

@@ -4,6 +4,7 @@ import {
   createClass,
   joinClass,
   getMyClasses,
+  getClassStudents,
 } from "../controllers/classroom.controller.js";
 
 import { verifyToken } from "../middleware/auth.middleware.js";
@@ -14,5 +15,6 @@ const router = express.Router();
 router.post("/create", verifyToken, createClass);
 router.post("/join", verifyToken, joinClass);
 router.get("/my", verifyToken, getMyClasses);
+router.get("/:classId/students", verifyToken, getClassStudents);
 
 export default router;

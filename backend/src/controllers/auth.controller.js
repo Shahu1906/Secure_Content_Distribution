@@ -94,8 +94,7 @@ export const verifyOTP = async (req, res) => {
       });
     }
 
-    // Delete OTP after success
-    await redis.del(`otp:${email}`);
+
 
     /* ---------------------------------------
        2. Check if User Exists
@@ -110,6 +109,9 @@ export const verifyOTP = async (req, res) => {
     ======================================= */
     if (userResult.rows.length > 0) {
       const user = userResult.rows[0];
+
+      // Delete OTP after successful login
+      await redis.del(`otp:${email}`);
 
       const token = jwt.sign(
         {
@@ -169,6 +171,9 @@ export const verifyOTP = async (req, res) => {
     );
 
     const newUser = insertResult.rows[0];
+
+    // Delete OTP after successful registration
+    await redis.del(`otp:${email}`);
 
     const token = jwt.sign(
       {
